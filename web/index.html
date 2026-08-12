@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEGIRO Tracker · Análisis de rentabilidad</title>
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-de">DEGIRO</span><span class="brand-tr">tracker</span></div>
+  <div class="topbar-right" id="topbarInfo"></div>
+</header>
+
+<main>
+  <!-- Pantalla de carga de archivo -->
+  <section id="uploadView" class="upload-view">
+    <div class="upload-card" id="dropZone">
+      <div class="upload-icon">📊</div>
+      <h2>Analiza tu cuenta de DEGIRO</h2>
+      <p>Arrastra aquí tu archivo <b>Account.xlsx</b> (Actividad → Estado de cuenta → Exportar)</p>
+      <p class="muted">Todo se procesa en tu navegador. Nada se sube a ningún servidor.</p>
+      <label class="btn-primary">
+        Seleccionar archivo
+        <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+      </label>
+    </div>
+    <div id="loadStatus" class="load-status hidden">
+      <div class="spinner"></div>
+      <div id="loadLog" class="load-log"></div>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard" class="hidden">
+
+    <div class="cards" id="summaryCards"></div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Rentabilidad vs índices <span class="hint">(base 100, rentabilidad ponderada por tiempo)</span></h3>
+        <div class="controls">
+          <div class="presets" id="presetBtns">
+            <button data-range="1m">1M</button>
+            <button data-range="6m">6M</button>
+            <button data-range="ytd">YTD</button>
+            <button data-range="1y">1A</button>
+            <button data-range="3y">3A</button>
+            <button data-range="5y">5A</button>
+            <button data-range="max" class="active">MAX</button>
+          </div>
+          <div class="daterange">
+            <label>Desde <input type="date" id="rangeStart"></label>
+            <label>Hasta <input type="date" id="rangeEnd"></label>
+          </div>
+        </div>
+      </div>
+      <div class="bench-toggles" id="benchToggles"></div>
+      <div class="chart-wrap"><canvas id="perfChart"></canvas></div>
+      <p class="hint">Consejo: usa la rueda del ratón o arrastra para hacer zoom en el gráfico. Doble clic para restablecer.</p>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Dinero ingresado vs valor y ganancia</h3>
+      </div>
+      <div class="chart-wrap"><canvas id="moneyChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Resultado por inversión</h3>
+        <div class="tabs">
+          <button id="tabOpen" class="active">Abiertas</button>
+          <button id="tabClosed">Cerradas</button>
+          <button id="tabAll">Todas</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="productTable">
+          <thead>
+            <tr>
+              <th>Producto</th><th class="num">Posición</th><th class="num">Valor actual</th>
+              <th class="num">Invertido</th><th class="num">Recibido</th><th class="num">Dividendos</th>
+              <th class="num">P/G total</th><th class="num">%</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel warn-panel hidden" id="warnPanel">
+      <h3>Avisos</h3>
+      <ul id="warnList"></ul>
+    </div>
+
+  </section>
+</main>
+
+<footer class="foot">Hecho con Kiro · Los datos de mercado provienen de Yahoo Finance · Uso personal</footer>
+
+<script src="js/parser.js"></script>
+<script src="js/replay.js"></script>
+<script src="js/prices.js"></script>
+<script src="js/metrics.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
