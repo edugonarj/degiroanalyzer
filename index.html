@@ -1,405 +1,105 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-  :root {
-    --bg:#f5f5f7; --surface:#ffffff; --s2:#f5f5f7; --border:#e5e5ea;
-    --accent:#0071e3; --a2:#34aadc; --green:#34c759; --red:#ff3b30;
-    --text:#1d1d1f; --muted:#86868b; --gold:#ff9f0a;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
-  #upload-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;text-align:center}
-  #upload-screen h1{font-size:clamp(1.8rem,5vw,3rem);font-weight:600;letter-spacing:-.5px;color:var(--text);margin-bottom:.4rem}
-  #upload-screen>p{color:var(--muted);margin-bottom:2rem;font-size:.9rem;font-weight:400}
-  .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;max-width:520px;width:100%;margin-bottom:1.2rem}
-  @media(max-width:480px){.upload-grid{grid-template-columns:1fr}}
-  .dz{border:1.5px dashed var(--border);border-radius:14px;padding:1.5rem 1rem;cursor:pointer;transition:all .2s;background:var(--surface);text-align:center}
-  .dz:hover,.dz.over{border-color:var(--accent);background:#f0f7ff}
-  .dz.loaded{border-color:var(--green);border-style:solid}
-  .dz-icon{font-size:1.8rem;margin-bottom:.4rem}
-  .dz h3{font-size:.85rem;font-weight:500;margin-bottom:.2rem;color:var(--text)}
-  .dz p{font-size:.75rem;color:var(--muted);margin-bottom:.75rem;font-weight:400}
-  .dz-status{font-size:.72rem;color:var(--green);min-height:.9rem;margin-top:.4rem}
-  .btn{background:var(--accent);color:#fff;border:none;padding:.6rem 1.6rem;border-radius:980px;font-family:inherit;font-weight:500;font-size:.85rem;cursor:pointer;transition:all .15s;letter-spacing:-.01em}
-  .btn:hover{background:#0077ed}
-  .btn:disabled{opacity:.35;cursor:default}
-  .note{color:var(--muted);font-size:.72rem;margin-top:1rem;max-width:440px;line-height:1.6;font-weight:400}
-  #dashboard{display:none}
-  header{background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;position:sticky;top:0;z-index:50}
-  .logo{font-size:1rem;font-weight:600;letter-spacing:-.3px;color:var(--text)}
-  .hdr-right{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
-  .btn-sm{background:var(--s2);border:1px solid var(--border);color:var(--text);padding:.28rem .8rem;border-radius:980px;font-family:inherit;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .15s}
-  .btn-sm:hover{background:var(--border)}
-  .price-badge{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:.35rem;font-weight:400}
-  .price-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  main{padding:1.25rem;max-width:1200px;margin:0 auto}
-  .tabs{display:flex;gap:.3rem;margin-bottom:1.25rem;flex-wrap:wrap;background:var(--s2);border-radius:10px;padding:.3rem;width:fit-content}
-  .tab{padding:.35rem .9rem;border-radius:7px;font-size:.8rem;font-weight:500;cursor:pointer;color:var(--muted);transition:all .15s;font-family:inherit;background:transparent;border:none}
-  .tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1)}
-  .tab-content{display:none}
-  .tab-content.active{display:block}
-  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;margin-bottom:1.25rem}
-  .kpi{background:var(--surface);border-radius:12px;padding:1rem;border:1px solid var(--border)}
-  .kpi-label{font-size:.7rem;color:var(--muted);margin-bottom:.35rem;font-weight:400;letter-spacing:0}
-  .kpi-value{font-size:1.05rem;font-weight:500;line-height:1.3;color:var(--text)}
-  .kpi-sub{font-size:.7rem;margin-top:.2rem;color:var(--muted);font-weight:400}
-  .pos{color:var(--green)!important} .neg{color:var(--red)!important} .gold{color:var(--gold)!important}
-  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.25rem}
-  @media(max-width:680px){.chart-grid{grid-template-columns:1fr}}
-  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem}
-  .chart-card.wide{grid-column:1/-1}
-  .chart-title{font-size:.72rem;font-weight:500;color:var(--muted);margin-bottom:.85rem;letter-spacing:0}
-  .chart-wrap{position:relative;height:200px}
-  .pos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:.75rem;margin-bottom:1.25rem}
-  .pos-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.1rem;transition:box-shadow .2s}
-  .pos-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
-  .pos-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.9rem}
-  .pos-name{font-size:.85rem;font-weight:500;line-height:1.3;color:var(--text)}
-  .pos-isin{font-size:.65rem;color:var(--muted);margin-top:.1rem;font-weight:400}
-  .pos-ticker{font-size:.7rem;font-weight:500;background:var(--s2);border:1px solid var(--border);padding:.18rem .5rem;border-radius:6px;color:var(--accent)}
-  .pos-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:.9rem}
-  .ss-label{font-size:.65rem;color:var(--muted);margin-bottom:.15rem;font-weight:400}
-  .ss-val{font-size:.85rem;font-weight:500;color:var(--text)}
-  .pos-bar-wrap{background:var(--s2);border-radius:4px;height:3px;overflow:hidden;margin-top:.7rem}
-  .pos-bar{height:100%;border-radius:4px;transition:width .5s ease}
-  .price-row{display:flex;align-items:center;gap:.5rem;padding:.6rem .8rem;background:var(--s2);border-radius:9px;margin-top:.7rem}
-  .price-live{font-size:.95rem;font-weight:500}
-  .price-change{font-size:.75rem;font-weight:400}
-  .price-loading{font-size:.72rem;color:var(--muted);animation:blink 1.2s infinite;font-weight:400}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-  .stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:.75rem;margin-bottom:1.25rem}
-  .stock-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:box-shadow .2s}
-  .stock-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
-  .stock-name{font-size:.82rem;font-weight:500;margin-bottom:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
-  .stock-isin{font-size:.65rem;color:var(--muted);margin-bottom:.65rem;font-weight:400}
-  .stock-stats{display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
-  .badge{display:inline-block;padding:.12rem .45rem;border-radius:5px;font-size:.62rem;font-weight:500}
-  .badge-green{background:rgba(52,199,89,.1);color:var(--green)}
-  .badge-red{background:rgba(255,59,48,.1);color:var(--red)}
-  .badge-blue{background:rgba(0,113,227,.1);color:var(--accent)}
-  .filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
-  select.fsel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.35rem .8rem;color:var(--text);font-family:inherit;font-size:.78rem;font-weight:400;outline:none;cursor:pointer}
-  select.fsel:focus{border-color:var(--accent)}
-  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-  .table-hdr{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:.6rem}
-  .table-title{font-size:.78rem;font-weight:500;color:var(--text)}
-  .search-box{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;color:var(--text);font-family:inherit;font-size:.78rem;outline:none;width:170px;font-weight:400}
-  .search-box:focus{border-color:var(--accent)}
-  table{width:100%;border-collapse:collapse}
-  th{padding:.55rem .85rem;text-align:left;font-size:.7rem;font-weight:500;color:var(--muted);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
-  th:hover{color:var(--text)}
-  td{padding:.55rem .85rem;border-bottom:1px solid var(--border);font-size:.78rem;font-weight:400;color:var(--text)}
-  tr:last-child td{border-bottom:none}
-  tr:hover td{background:var(--s2)}
-  .year-table{width:100%;border-collapse:collapse}
-  .year-table th,.year-table td{padding:.5rem .85rem;text-align:right;border-bottom:1px solid var(--border);font-size:.78rem;font-weight:400;color:var(--text)}
-  .year-table th:first-child,.year-table td:first-child{text-align:left}
-  .year-table thead th{color:var(--muted);font-size:.7rem;font-weight:500}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;padding:1rem;overflow-y:auto}
-  .modal-overlay.open{display:flex;align-items:flex-start;justify-content:center;padding-top:2rem}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:1.4rem;width:100%;max-width:640px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.15)}
-  .modal-close{position:absolute;top:.9rem;right:.9rem;background:var(--s2);border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center}
-  .modal-close:hover{background:var(--border)}
-  .modal-title{font-size:1rem;font-weight:600;margin-bottom:.2rem;color:var(--text)}
-  .modal-sub{font-size:.72rem;color:var(--muted);margin-bottom:1.2rem;font-weight:400}
-  #loading{display:none;position:fixed;inset:0;background:rgba(245,245,247,.9);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:.9rem}
-  #loading.show{display:flex}
-  .spinner{width:36px;height:36px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .loading-text{color:var(--muted);font-size:.82rem;font-weight:400}
-  @media(max-width:480px){main{padding:1rem}.kpi-value{font-size:.95rem}td,th{padding:.4rem .55rem}}
-</style>
+tps://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div><div class="loading-text" id="loading-text">Cargando...</div></div>
-<div id="upload-screen">
-  <h1>Portfolio<br>Dashboard</h1>
-  <p>Importa tu historial de DeGiro para analizar tu cartera</p>
-  <div class="upload-grid">
-    <div class="dz" id="dz-tx">
-      <div class="dz-icon">📊</div>
-      <h3>Transacciones</h3>
-      <p><strong>Transactions.csv</strong></p>
-      <button class="btn" style="font-size:.76rem;padding:.48rem 1.1rem" onclick="event.stopPropagation();document.getElementById('fi-tx').click()">Seleccionar</button>
-      <div class="dz-status" id="st-tx"></div>
+<header class="topbar">
+  <div class="brand"><span class="brand-de">DEGIRO</span><span class="brand-tr">tracker</span></div>
+  <div class="topbar-right" id="topbarInfo"></div>
+</header>
+
+<main>
+  <!-- Pantalla de carga de archivo -->
+  <section id="uploadView" class="upload-view">
+    <div class="upload-card" id="dropZone">
+      <div class="upload-icon">📊</div>
+      <h2>Analiza tu cuenta de DEGIRO</h2>
+      <p>Arrastra aquí tu archivo <b>Account.xlsx</b> (Actividad → Estado de cuenta → Exportar)</p>
+      <p class="muted">Todo se procesa en tu navegador. Nada se sube a ningún servidor.</p>
+      <label class="btn-primary">
+        Seleccionar archivo
+        <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+      </label>
     </div>
-    <div class="dz" id="dz-ac">
-      <div class="dz-icon">💰</div>
-      <h3>Cuenta</h3>
-      <p><strong>Account.csv</strong> (opcional)</p>
-      <button class="btn" style="font-size:.76rem;padding:.48rem 1.1rem" onclick="event.stopPropagation();document.getElementById('fi-ac').click()">Seleccionar</button>
-      <div class="dz-status" id="st-ac"></div>
+    <div id="loadStatus" class="load-status hidden">
+      <div class="spinner"></div>
+      <div id="loadLog" class="load-log"></div>
     </div>
-  </div>
-  <button class="btn" id="btn-load" disabled onclick="loadBoth()">Analizar cartera →</button>
-  <p class="note">Todo el cálculo es local · Tus datos no salen de tu dispositivo<br>Precios actualizados manualmente · Pide a Claude nuevos precios cuando quieras</p>
-  <input type="file" id="fi-tx" accept=".csv" style="display:none">
-  <input type="file" id="fi-ac" accept=".csv" style="display:none">
-</div>
-<div id="dashboard">
-  <header>
-    <div class="logo">Portfolio</div>
-    <div class="hdr-right">
-      <div class="price-badge"><div class="price-dot"></div><span id="price-status">Cargando precios...</span></div>
-      <button class="btn-sm" onclick="refreshPrices()">↻ Precios</button>
-      <div style="font-size:.68rem;color:var(--muted)">Pide a Claude precios actualizados</div>
-      <button class="btn-sm" onclick="resetUpload()">↑ Nuevo CSV</button>
-    </div>
-  </header>
-  <main>
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('resumen')">Resumen</div>
-      <div class="tab" onclick="switchTab('cartera')">Cartera Abierta</div>
-      <div class="tab" onclick="switchTab('acciones')">Histórico</div>
-      <div class="tab" onclick="switchTab('historial')">Transacciones</div>
-      <div class="tab" onclick="switchTab('anual')">Por Año</div>
-    </div>
-    <div class="tab-content active" id="tab-resumen">
-      <div class="kpi-grid" id="kpi-grid"></div>
-      <div class="chart-grid">
-        <div class="chart-card wide"><div class="chart-title">P&L Realizado Acumulado (EUR)</div><div class="chart-wrap"><canvas id="chartPnL"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">Flujo de Capital por Año</div><div class="chart-wrap"><canvas id="chartCapital"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">Top 10 por Volumen Operado</div><div class="chart-wrap"><canvas id="chartTop"></canvas></div></div>
-      </div>
-    </div>
-    <div class="tab-content" id="tab-cartera"><div class="pos-grid" id="pos-grid"></div></div>
-    <div class="tab-content" id="tab-acciones">
-      <div class="filters">
-        <select class="fsel" id="f-status" onchange="renderStocks()">
-          <option value="all">Todos los activos cerrados</option>
-          <option value="pos">Rentables</option>
-          <option value="neg">En pérdidas</option>
-        </select>
-        <select class="fsel" id="f-sort" onchange="renderStocks()">
-          <option value="pnl">Ordenar: P&L absoluto</option>
-          <option value="pct">Ordenar: % rentabilidad</option>
-          <option value="vol">Ordenar: Volumen operado</option>
-          <option value="name">Ordenar: Nombre</option>
-        </select>
-      </div>
-      <div class="stock-grid" id="stock-grid"></div>
-    </div>
-    <div class="tab-content" id="tab-historial">
-      <div class="table-wrap">
-        <div class="table-hdr">
-          <div class="table-title">Transacciones · <span id="tx-count"></span></div>
-          <input class="search-box" type="text" id="search-box" placeholder="Buscar activo..." oninput="renderTable()">
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard" class="hidden">
+
+    <div class="cards" id="summaryCards"></div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Rentabilidad vs índices <span class="hint">(base 100, rentabilidad ponderada por tiempo)</span></h3>
+        <div class="controls">
+          <div class="presets" id="presetBtns">
+            <button data-range="1m">1M</button>
+            <button data-range="6m">6M</button>
+            <button data-range="ytd">YTD</button>
+            <button data-range="1y">1A</button>
+            <button data-range="3y">3A</button>
+            <button data-range="5y">5A</button>
+            <button data-range="max" class="active">MAX</button>
+          </div>
+          <div class="daterange">
+            <label>Desde <input type="date" id="rangeStart"></label>
+            <label>Hasta <input type="date" id="rangeEnd"></label>
+          </div>
         </div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead><tr>
-              <th onclick="sortTable('fecha')">Fecha ↕</th>
-              <th onclick="sortTable('producto')">Activo ↕</th>
-              <th onclick="sortTable('numero')">Acciones ↕</th>
-              <th>Precio</th>
-              <th onclick="sortTable('valorEur')">Valor EUR ↕</th>
-              <th onclick="sortTable('totalEur')">Total EUR ↕</th>
-              <th>Tipo</th>
-            </tr></thead>
-            <tbody id="tx-body"></tbody>
-          </table>
-        </div>
-        <div id="table-pager" style="padding:.7rem 1rem;display:flex;gap:.5rem;align-items:center;border-top:1px solid var(--border);flex-wrap:wrap"></div>
       </div>
+      <div class="bench-toggles" id="benchToggles"></div>
+      <div class="chart-wrap"><canvas id="perfChart"></canvas></div>
+      <p class="hint">Consejo: usa la rueda del ratón o arrastra para hacer zoom en el gráfico. Doble clic para restablecer.</p>
     </div>
-    <div class="tab-content" id="tab-anual">
-      <div class="chart-grid">
-        <div class="chart-card"><div class="chart-title">Flujo Neto por Año (EUR)</div><div class="chart-wrap"><canvas id="chartYearPnL"></canvas></div></div>
-        <div class="chart-card"><div class="chart-title">Operaciones por Año</div><div class="chart-wrap"><canvas id="chartYearOps"></canvas></div></div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Dinero ingresado vs valor y ganancia</h3>
+      </div>
+      <div class="chart-wrap"><canvas id="moneyChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Resultado por inversión</h3>
+        <div class="tabs">
+          <button id="tabOpen" class="active">Abiertas</button>
+          <button id="tabClosed">Cerradas</button>
+          <button id="tabAll">Todas</button>
+        </div>
       </div>
       <div class="table-wrap">
-        <div class="table-hdr"><div class="table-title">Detalle por Año</div></div>
-        <div style="overflow-x:auto">
-          <table class="year-table">
-            <thead><tr><th>Año</th><th>Compras</th><th>Ventas</th><th>Flujo neto</th><th>Operaciones</th><th>Activos</th></tr></thead>
-            <tbody id="year-body"></tbody>
-          </table>
-        </div>
+        <table id="productTable">
+          <thead>
+            <tr>
+              <th>Producto</th><th class="num">Posición</th><th class="num">Valor actual</th>
+              <th class="num">Invertido</th><th class="num">Recibido</th><th class="num">Dividendos</th>
+              <th class="num">P/G total</th><th class="num">%</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
-  </main>
-</div>
-<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <div class="modal-title" id="modal-title"></div>
-    <div class="modal-sub" id="modal-sub"></div>
-    <div id="modal-body"></div>
-  </div>
-</div>
-<script>
-let allTx=[],stockMap={},statsData={},filteredTx=[];
-let tableSort={col:'fecha',asc:false},tablePage=0;
-const PAGE=50,charts={};
-let liveP={},fxEurUsd=1.122;
-let rawTx=null,rawAc=null;
-const ISIN_TICKER={'US00217D1000':'ASTS','US4330001060':'HIMS','US5901061003':'MRLN'};
-const fmt=(n,d=2)=>n==null||isNaN(n)?'—':new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
-const fmtE=n=>(n>=0?'+':'')+fmt(n)+' €';
-const fmtP=n=>(n>=0?'+':'')+fmt(n,1)+'%';
-function parseNum(s){if(!s||!s.trim())return 0;s=s.trim().replace(/\s/g,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return parseFloat(s)||0;}
-function parseDate(s){const p=s.trim().split('-');if(p.length!==3)return null;return new Date(+p[2],+p[1]-1,+p[0]);}
-function dateKey(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
-function splitCSV(line){const r=[];let q=false,c='';for(const ch of line){if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;}
-function parseTxCSV(text){const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');const txs=[];for(let i=1;i<lines.length;i++){const l=lines[i].trim();if(!l)continue;const c=splitCSV(l);if(c.length<16||!c[0].trim())continue;const d=parseDate(c[0].trim());if(!d)continue;txs.push({fecha:c[0].trim(),hora:c[1].trim(),dateObj:d,year:d.getFullYear(),month:d.getMonth(),producto:c[2].trim().replace(/^"|"$/g,''),isin:c[3].trim(),bolsa:c[4].trim(),numero:parseNum(c[6]),precio:parseNum(c[7]),moneda:c[8].trim(),valorLocal:parseNum(c[9]),valorEur:parseNum(c[11]),totalEur:parseNum(c[15])});}return txs;}
-function parseAccCSV(text){const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');let dep=0,wit=0;for(let i=1;i<lines.length;i++){const l=lines[i].trim();if(!l)continue;const c=splitCSV(l);if(c.length<9)continue;const desc=c[5]?c[5].trim():'';const mon=c[7]?c[7].trim():'';const val=parseNum(c[8]);if(desc==='flatex Deposit'&&mon==='EUR')dep+=val;if(desc==='flatex Withdrawal'&&mon==='EUR')wit+=val;}return{netDeposited:dep+wit};}
-function analyze(txs,netDeposited,cashBalance){
-  const stocks={};
-  const sorted=[...txs].sort((a,b)=>a.dateObj-b.dateObj||(a.hora>b.hora?1:-1));
-  sorted.forEach(tx=>{
-    const key=tx.isin||tx.producto;
-    if(!stocks[key])stocks[key]={name:tx.producto,isin:tx.isin,bolsa:tx.bolsa,moneda:tx.moneda,lots:[],shares:0,costBasis:0,realizedPnL:0,totalBought:0,totalSold:0,txs:[],firstDate:null,lastDate:null};
-    const s=stocks[key];s.txs.push(tx);
-    if(!s.firstDate||tx.dateObj<s.firstDate)s.firstDate=tx.dateObj;
-    if(!s.lastDate||tx.dateObj>s.lastDate)s.lastDate=tx.dateObj;
-    const n=tx.numero,total=tx.totalEur;
-    if(n>0){const cost=Math.abs(total);s.totalBought+=cost;s.costBasis+=cost;s.shares+=n;s.lots.push({shares:n,cps:cost/n});}
-    else if(n<0){const toSell=Math.abs(n),proceeds=Math.abs(total);s.totalSold+=proceeds;let rem=toSell,cos=0,nl=[];for(const lot of s.lots){if(rem<=0){nl.push(lot);}else if(lot.shares<=rem+1e-9){cos+=lot.shares*lot.cps;rem-=lot.shares;}else{cos+=rem*lot.cps;nl.push({shares:lot.shares-rem,cps:lot.cps});rem=0;}}s.lots=nl;s.realizedPnL+=proceeds-cos;s.shares=Math.max(0,s.shares-toSell);s.costBasis=s.lots.reduce((a,l)=>a+l.shares*l.cps,0);}
-  });
-  Object.values(stocks).forEach(s=>{s.isOpen=s.shares>0.001;s.avgCost=s.isOpen&&s.shares>0?s.costBasis/s.shares:0;const days=s.firstDate&&s.lastDate?Math.max(1,(s.lastDate-s.firstDate)/86400000):1;s.holdingDays=days;if(s.totalBought>0){s.returnPct=(s.realizedPnL/s.totalBought)*100;const yrs=days/365.25,tr=1+s.realizedPnL/s.totalBought;s.annReturn=yrs>=0.1?(Math.pow(Math.max(1e-9,tr),1/yrs)-1)*100:s.returnPct;}else{s.returnPct=0;s.annReturn=0;}});
-  const totalRealized=Object.values(stocks).reduce((a,s)=>a+s.realizedPnL,0);
-  const totalBought=Object.values(stocks).reduce((a,s)=>a+s.totalBought,0);
-  const totalSold=Object.values(stocks).reduce((a,s)=>a+s.totalSold,0);
-  const openCost=Object.values(stocks).filter(s=>s.isOpen).reduce((a,s)=>a+s.costBasis,0);
-  const dates=txs.map(t=>t.dateObj);
-  const firstD=new Date(Math.min(...dates)),lastD=new Date(Math.max(...dates));
-  const holdYrs=Math.max(0.01,(lastD-firstD)/(365.25*86400000));
-  let annReturn=null;
-  if(netDeposited>0){const wealth=cashBalance+openCost+totalRealized;annReturn=(Math.pow(Math.max(1e-9,wealth/netDeposited),1/holdYrs)-1)*100;}
-  const tmp={},mPnL={};
-  [...txs].sort((a,b)=>a.dateObj-b.dateObj).forEach(tx=>{const k=tx.isin||tx.producto;if(!tmp[k])tmp[k]={shares:0,lots:[]};const ts=tmp[k],n=tx.numero,mk=dateKey(tx.dateObj);if(n>0){const cost=Math.abs(tx.totalEur);ts.shares+=n;ts.lots.push({shares:n,cps:cost/n});}else if(n<0){const proceeds=Math.abs(tx.totalEur);let rem=Math.abs(n),cos=0,nl=[];for(const l of ts.lots){if(rem<=0){nl.push(l);}else if(l.shares<=rem+1e-9){cos+=l.shares*l.cps;rem-=l.shares;}else{cos+=rem*l.cps;nl.push({shares:l.shares-rem,cps:l.cps});rem=0;}}ts.lots=nl;ts.shares=Math.max(0,ts.shares-Math.abs(n));mPnL[mk]=(mPnL[mk]||0)+proceeds-cos;}});
-  let cum=0;const cumData=Object.keys(mPnL).sort().map(k=>{cum+=mPnL[k];return{label:k,value:cum};});
-  const yearly={};txs.forEach(tx=>{const y=tx.year;if(!yearly[y])yearly[y]={compras:0,ventas:0,ops:0,assets:new Set()};yearly[y].ops++;yearly[y].assets.add(tx.isin||tx.producto);if(tx.numero>0)yearly[y].compras+=Math.abs(tx.totalEur);else if(tx.numero<0)yearly[y].ventas+=Math.abs(tx.totalEur);});
-  return{stocks,totalRealized,totalBought,totalSold,openCost,netDeposited,cashBalance,annReturn,holdYrs,firstDate:firstD,lastDate:lastD,cumData,yearly,numStocks:Object.keys(stocks).length,numTx:txs.length};
-}
-// ── PRICES — hardcoded, updated manually ─────────────────────
-// Last updated: 10 May 2026
-const HARDCODED_PRICES={EURUSD:1.122,ASTS:{price:74.86,prev:65.35,currency:'USD'},HIMS:{price:29.06,prev:25.65,currency:'USD'},MRLN:{price:8.23,prev:8.31,currency:'USD'}};
-async function fetchAllPricesViaAI(tickers){fxEurUsd=HARDCODED_PRICES.EURUSD;const result={EURUSD:fxEurUsd};tickers.forEach(t=>{if(HARDCODED_PRICES[t])result[t]=HARDCODED_PRICES[t];});return result;}
-async function fetchPrice(ticker){return null;}
-async function fetchFx(){}
-async function refreshPrices(){
-  document.getElementById('price-status').textContent='Cargando...';
-  const opens=Object.values(stockMap).filter(s=>s.isOpen);
-  const tickers=opens.map(s=>ISIN_TICKER[s.isin]).filter(Boolean);
-  if(!tickers.length){document.getElementById('price-status').textContent='Sin posiciones abiertas';return;}
-  const result=await fetchAllPricesViaAI(tickers);
-  if(!result){document.getElementById('price-status').textContent='⚠ Sin precios';return;}
-  if(result.EURUSD&&result.EURUSD>0)fxEurUsd=result.EURUSD;
-  opens.forEach(s=>{const ticker=ISIN_TICKER[s.isin];if(ticker&&result[ticker])liveP[s.isin]={...result[ticker],ticker};});
-  const now=new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-  document.getElementById('price-status').textContent=`Actualizado ${now}`;
-  renderKPIs();
-  if(document.getElementById('tab-cartera').classList.contains('active'))renderOpenPositions();
-}
-function getUnrealized(){let u=0;Object.values(stockMap).filter(s=>s.isOpen).forEach(s=>{const p=liveP[s.isin];if(!p)return;const pe=p.currency==='USD'?p.price/fxEurUsd:p.price;u+=pe*s.shares-s.costBasis;});return u;}
-function getMarketVal(){let mv=0;Object.values(stockMap).filter(s=>s.isOpen).forEach(s=>{const p=liveP[s.isin];mv+=p?(p.currency==='USD'?p.price/fxEurUsd:p.price)*s.shares:s.costBasis;});return mv;}
-function renderKPIs(){
-  const st=statsData,hasPrices=Object.keys(liveP).length>0,unr=getUnrealized(),mv=getMarketVal(),totalPnL=st.totalRealized+unr,totalPct=st.netDeposited>0?((st.cashBalance+mv+st.totalRealized-st.netDeposited)/st.netDeposited)*100:0;
-  const items=[
-    {label:'P&L Total',value:hasPrices?fmtE(totalPnL):'Cargando…',sub:hasPrices?fmtP(totalPct):'',cls:hasPrices?(totalPnL>=0?'pos':'neg'):''},
-    {label:'P&L Realizado',value:fmtE(st.totalRealized),sub:'posiciones cerradas',cls:st.totalRealized>=0?'pos':'neg'},
-    {label:'P&L No Realizado',value:hasPrices?fmtE(unr):'Cargando…',sub:'posiciones abiertas',cls:hasPrices?(unr>=0?'pos':'neg'):''},
-    {label:'Valor Cartera',value:hasPrices?fmt(mv)+' €':'Cargando…',sub:'precio de mercado',cls:hasPrices?'gold':''},
-    {label:'Coste Cartera',value:fmt(st.openCost)+' €',sub:'precio de compra',cls:''},
-    {label:'Rent. Anualizada',value:st.annReturn!=null?fmtP(st.annReturn):'—',sub:fmt(st.holdYrs,1)+' años',cls:st.annReturn>=0?'pos':'neg'},
-    {label:'Dinero Aportado',value:fmt(st.netDeposited)+' €',sub:'depósitos netos',cls:''},
-    {label:'Total Comprado',value:fmt(st.totalBought)+' €',sub:'histórico bruto',cls:''},
-    {label:'Activos / Ops',value:st.numStocks+' / '+st.numTx,sub:'distintos · transacciones',cls:''},
-  ];
-  document.getElementById('kpi-grid').innerHTML=items.map(it=>`<div class="kpi"><div class="kpi-label">${it.label}</div><div class="kpi-value ${it.cls}">${it.value}</div><div class="kpi-sub">${it.sub||''}</div></div>`).join('');
-}
-function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
-function chartOpts(yFmt){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:'#e5e5ea',borderWidth:1,titleColor:'#86868b',bodyColor:'#1d1d1f',padding:10,titleFont:{family:'-apple-system,sans-serif',size:10},bodyFont:{family:'-apple-system,sans-serif',size:11}}},scales:{x:{grid:{color:'#f5f5f7'},ticks:{color:'#86868b',font:{family:'-apple-system,sans-serif',size:10},maxTicksLimit:8},border:{display:false}},y:{grid:{color:'#f5f5f7'},ticks:{color:'#86868b',font:{family:'-apple-system,sans-serif',size:10},callback:yFmt||null},border:{display:false}}}};}
-function renderCharts(){
-  const st=statsData,cum=st.cumData;
-  destroyChart('pnl');charts['pnl']=new Chart(document.getElementById('chartPnL'),{type:'line',data:{labels:cum.map(d=>d.label),datasets:[{data:cum.map(d=>d.value),borderColor:'#0071e3',backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,200);g.addColorStop(0,'rgba(0,113,227,.12)');g.addColorStop(1,'rgba(0,113,227,0)');return g;},fill:true,tension:.4,pointRadius:0,borderWidth:2}]},options:chartOpts(v=>fmt(v)+'€')});
-  const yKeys=Object.keys(st.yearly).sort();
-  destroyChart('cap');charts['cap']=new Chart(document.getElementById('chartCapital'),{type:'bar',data:{labels:yKeys,datasets:[{label:'Compras',data:yKeys.map(y=>-st.yearly[y].compras),backgroundColor:'rgba(255,59,48,.7)'},{label:'Ventas',data:yKeys.map(y=>st.yearly[y].ventas),backgroundColor:'rgba(52,199,89,.7)'}]},options:{...chartOpts(v=>fmt(Math.abs(v))+'€'),plugins:{legend:{display:true,labels:{color:'#86868b',font:{family:'-apple-system,sans-serif',size:10}}}}}});
-  const top=Object.values(st.stocks).sort((a,b)=>(b.totalBought+b.totalSold)-(a.totalBought+a.totalSold)).slice(0,10);
-  destroyChart('top');charts['top']=new Chart(document.getElementById('chartTop'),{type:'bar',data:{labels:top.map(s=>s.name.length>18?s.name.slice(0,16)+'…':s.name),datasets:[{data:top.map(s=>s.totalBought+s.totalSold),backgroundColor:top.map((_,i)=>`hsl(${210+i*15},70%,55%)`)}]},options:{...chartOpts(v=>fmt(v)+'€'),indexAxis:'y',plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:'#e5e5ea',borderWidth:1,titleColor:'#86868b',bodyColor:'#1d1d1f',titleFont:{family:'-apple-system,sans-serif',size:10},bodyFont:{family:'-apple-system,sans-serif',size:11}}}}});
-}
-function renderYearCharts(){
-  const st=statsData,yKeys=Object.keys(st.yearly).sort(),net=yKeys.map(y=>st.yearly[y].ventas-st.yearly[y].compras);
-  destroyChart('ypnl');charts['ypnl']=new Chart(document.getElementById('chartYearPnL'),{type:'bar',data:{labels:yKeys,datasets:[{data:net,backgroundColor:net.map(v=>v>=0?'rgba(52,199,89,.7)':'rgba(255,59,48,.7)')}]},options:chartOpts(v=>fmt(v)+'€')});
-  destroyChart('yops');charts['yops']=new Chart(document.getElementById('chartYearOps'),{type:'bar',data:{labels:yKeys,datasets:[{data:yKeys.map(y=>st.yearly[y].ops),backgroundColor:'rgba(0,113,227,.7)'}]},options:chartOpts(v=>v)});
-  document.getElementById('year-body').innerHTML=yKeys.map((y,i)=>{const s=st.yearly[y],pnl=net[i];return`<tr><td><strong>${y}</strong></td><td class="neg">${fmt(s.compras)} €</td><td class="pos">${fmt(s.ventas)} €</td><td class="${pnl>=0?'pos':'neg'}">${fmtE(pnl)}</td><td>${s.ops}</td><td>${s.assets.size}</td></tr>`;}).join('');
-}
-function renderOpenPositions(){
-  const opens=Object.values(stockMap).filter(s=>s.isOpen);
-  document.getElementById('pos-grid').innerHTML=opens.map(s=>{
-    const ticker=ISIN_TICKER[s.isin]||'—',p=liveP[s.isin];
-    let priceHtml,mv=null,unr=null;
-    if(p){const pe=p.currency==='USD'?p.price/fxEurUsd:p.price;mv=pe*s.shares;unr=mv-s.costBasis;const chgPct=((p.price-p.prev)/p.prev)*100,cc=chgPct>=0?'pos':'neg';priceHtml=`<div class="price-row"><div style="flex:1"><div class="ss-label">Precio actual</div><div class="price-live">${fmt(p.price)} ${p.currency}</div></div><div style="text-align:right"><div class="price-change ${cc}">${fmtP(chgPct)} hoy</div><div style="font-size:.6rem;color:var(--muted)">≈ ${fmt(p.price/fxEurUsd)} €</div></div></div>`;}
-    else priceHtml=`<div class="price-row"><div class="price-loading">Cargando precio...</div></div>`;
-    const uc=unr!=null?(unr>=0?'pos':'neg'):'',barPct=mv&&s.costBasis?Math.min(180,Math.max(10,(mv/s.costBasis)*100)):50,barColor=unr!=null&&unr>=0?'var(--green)':'var(--red)';
-    return`<div class="pos-card"><div class="pos-header"><div><div class="pos-name">${s.name}</div><div class="pos-isin">${s.isin}</div></div><div class="pos-ticker">${ticker}</div></div><div class="pos-stats"><div><div class="ss-label">Acciones</div><div class="ss-val">${fmt(s.shares,0)}</div></div><div><div class="ss-label">Coste medio</div><div class="ss-val">${fmt(s.avgCost,3)} €</div></div><div><div class="ss-label">Coste total</div><div class="ss-val">${fmt(s.costBasis)} €</div></div><div><div class="ss-label">Valor mercado</div><div class="ss-val ${mv?'gold':''}">${mv?fmt(mv)+' €':'—'}</div></div><div><div class="ss-label">P&L no realiz.</div><div class="ss-val ${uc}">${unr!=null?fmtE(unr):'—'}</div></div><div><div class="ss-label">P&L %</div><div class="ss-val ${uc}">${unr!=null&&s.costBasis?fmtP((unr/s.costBasis)*100):'—'}</div></div></div>${priceHtml}<div class="pos-bar-wrap"><div class="pos-bar" style="width:${barPct}%;background:${barColor}"></div></div></div>`;
-  }).join('');
-}
-function renderStocks(){
-  const fs=document.getElementById('f-status').value,fso=document.getElementById('f-sort').value;
-  let list=Object.values(stockMap).filter(s=>!s.isOpen);
-  if(fs==='pos')list=list.filter(s=>s.realizedPnL>0);else if(fs==='neg')list=list.filter(s=>s.realizedPnL<0);
-  if(fso==='pnl')list.sort((a,b)=>Math.abs(b.realizedPnL)-Math.abs(a.realizedPnL));else if(fso==='pct')list.sort((a,b)=>Math.abs(b.returnPct)-Math.abs(a.returnPct));else if(fso==='vol')list.sort((a,b)=>(b.totalBought+b.totalSold)-(a.totalBought+a.totalSold));else list.sort((a,b)=>a.name.localeCompare(b.name));
-  document.getElementById('stock-grid').innerHTML=list.map(s=>{const cls=s.realizedPnL>=0?'pos':'neg';return`<div class="stock-card" onclick="showModal('${(s.isin||s.name).replace(/'/g,"\\'")}')"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.6rem"><div><div class="stock-name">${s.name}</div><div class="stock-isin">${s.isin||'—'}</div></div><span class="badge ${s.realizedPnL>=0?'badge-green':'badge-red'}">${s.realizedPnL>=0?'▲':'▼'}</span></div><div class="stock-stats"><div><div class="ss-label">P&L Realiz.</div><div class="ss-val ${cls}">${fmtE(s.realizedPnL)}</div></div><div><div class="ss-label">Rentab.</div><div class="ss-val ${cls}">${fmtP(s.returnPct)}</div></div><div><div class="ss-label">Invertido</div><div class="ss-val">${fmt(s.totalBought)} €</div></div><div><div class="ss-label">Operaciones</div><div class="ss-val">${s.txs.length}</div></div></div></div>`;}).join('');
-}
-function renderTable(){
-  const q=document.getElementById('search-box').value.toLowerCase();
-  filteredTx=allTx.filter(t=>!q||t.producto.toLowerCase().includes(q)||(t.isin||'').toLowerCase().includes(q));
-  filteredTx.sort((a,b)=>{let va,vb;if(tableSort.col==='fecha'){va=a.dateObj;vb=b.dateObj;}else if(tableSort.col==='producto'){va=a.producto;vb=b.producto;}else if(tableSort.col==='numero'){va=a.numero;vb=b.numero;}else if(tableSort.col==='valorEur'){va=a.valorEur;vb=b.valorEur;}else if(tableSort.col==='totalEur'){va=a.totalEur;vb=b.totalEur;}else return 0;return(va<vb?-1:va>vb?1:0)*(tableSort.asc?1:-1);});
-  tablePage=0;renderTablePage();
-}
-function sortTable(col){tableSort=tableSort.col===col?{col,asc:!tableSort.asc}:{col,asc:false};renderTable();}
-function renderTablePage(){
-  const sl=filteredTx.slice(tablePage*PAGE,(tablePage+1)*PAGE);
-  document.getElementById('tx-body').innerHTML=sl.map(tx=>{const buy=tx.numero>0,cls=tx.totalEur>=0?'pos':'neg';return`<tr><td>${tx.fecha}</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${tx.producto}">${tx.producto}</td><td>${buy?'+':''}${fmt(tx.numero,0)}</td><td>${fmt(tx.precio)} ${tx.moneda}</td><td>${fmt(tx.valorEur)} €</td><td class="${cls}">${fmt(tx.totalEur)} €</td><td><span class="badge ${buy?'badge-red':'badge-green'}">${buy?'Compra':'Venta'}</span></td></tr>`;}).join('');
-  const pages=Math.ceil(filteredTx.length/PAGE);
-  document.getElementById('table-pager').innerHTML=`<span style="color:var(--muted);font-size:.68rem;flex:1">${filteredTx.length} transacciones · Pág ${tablePage+1}/${pages}</span><button class="btn-sm" onclick="goPage(-1)" ${tablePage===0?'disabled':''}>‹</button><button class="btn-sm" onclick="goPage(1)" ${tablePage>=pages-1?'disabled':''}>›</button>`;
-}
-function goPage(d){tablePage=Math.max(0,Math.min(Math.ceil(filteredTx.length/PAGE)-1,tablePage+d));renderTablePage();}
-function showModal(key){
-  const s=Object.values(stockMap).find(x=>x.isin===key||x.name===key);if(!s)return;
-  document.getElementById('modal-title').textContent=s.name;
-  document.getElementById('modal-sub').textContent=`${s.isin||'—'} · ${s.txs.length} operaciones`;
-  const cls=s.realizedPnL>=0?'pos':'neg',monthly={};
-  s.txs.forEach(tx=>{const mk=dateKey(tx.dateObj);if(!monthly[mk])monthly[mk]={buy:0,sell:0,ops:0};if(tx.numero>0)monthly[mk].buy+=Math.abs(tx.totalEur);else monthly[mk].sell+=Math.abs(tx.totalEur);monthly[mk].ops++;});
-  const mrows=Object.keys(monthly).sort().map(m=>{const d=monthly[m],pnl=d.sell-d.buy;return`<tr><td>${m}</td><td class="neg">${fmt(d.buy)} €</td><td class="pos">${fmt(d.sell)} €</td><td class="${pnl>=0?'pos':'neg'}">${fmtE(pnl)}</td><td>${d.ops}</td></tr>`;}).join('');
-  document.getElementById('modal-body').innerHTML=`<div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr));margin-bottom:1.2rem"><div class="kpi"><div class="kpi-label">P&L Realizado</div><div class="kpi-value ${cls}">${fmtE(s.realizedPnL)}</div></div><div class="kpi"><div class="kpi-label">Rentabilidad</div><div class="kpi-value ${cls}">${fmtP(s.returnPct)}</div></div><div class="kpi"><div class="kpi-label">Rent. Anualiz.</div><div class="kpi-value ${cls}">${fmtP(s.annReturn)}</div></div><div class="kpi"><div class="kpi-label">Total comprado</div><div class="kpi-value">${fmt(s.totalBought)} €</div></div><div class="kpi"><div class="kpi-label">Total vendido</div><div class="kpi-value">${fmt(s.totalSold)} €</div></div><div class="kpi"><div class="kpi-label">Operaciones</div><div class="kpi-value">${s.txs.length}</div></div></div><div style="overflow-x:auto"><table class="year-table"><thead><tr><th>Mes</th><th>Compras</th><th>Ventas</th><th>Flujo neto</th><th>Ops</th></tr></thead><tbody>${mrows}</tbody></table></div>`;
-  document.getElementById('modal-overlay').classList.add('open');
-}
-function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
-function switchTab(name){const names=['resumen','cartera','acciones','historial','anual'];document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');if(name==='anual')renderYearCharts();if(name==='cartera')renderOpenPositions();}
-function checkReady(){document.getElementById('btn-load').disabled=!rawTx;}
-function setupDZ(dzId,inputId,stId,cb){const dz=document.getElementById(dzId),inp=document.getElementById(inputId),st=document.getElementById(stId);dz.addEventListener('click',()=>inp.click());dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});dz.addEventListener('dragleave',()=>dz.classList.remove('over'));dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');const f=e.dataTransfer.files[0];if(f)readFile(f,dz,st,cb);});inp.addEventListener('change',e=>{const f=e.target.files[0];if(f)readFile(f,dz,st,cb);});}
-function readFile(file,dz,st,cb){const r=new FileReader();r.onload=e=>{cb(e.target.result);dz.classList.add('loaded');st.textContent='✓ '+file.name;checkReady();};r.readAsText(file,'UTF-8');}
-function loadBoth(){
-  if(!rawTx)return;
-  document.getElementById('loading').classList.add('show');
-  document.getElementById('loading-text').textContent='Analizando transacciones...';
-  setTimeout(()=>{
-    try{
-      allTx=parseTxCSV(rawTx);if(!allTx.length)throw new Error('No se encontraron transacciones válidas.');
-      let netDep=33568.65,cash=3.43;
-      if(rawAc){const ac=parseAccCSV(rawAc);if(ac.netDeposited>0)netDep=ac.netDeposited;}
-      const st=analyze(allTx,netDep,cash);statsData=st;stockMap=st.stocks;
-      filteredTx=[...allTx];document.getElementById('tx-count').textContent=allTx.length;
-      renderKPIs();renderCharts();renderStocks();renderTable();
-      document.getElementById('upload-screen').style.display='none';
-      document.getElementById('dashboard').style.display='block';
-      document.getElementById('loading').classList.remove('show');
-      refreshPrices();
-    }catch(e){document.getElementById('loading').classList.remove('show');alert('Error: '+e.message);}
-  },60);
-}
-function resetUpload(){rawTx=null;rawAc=null;['st-tx','st-ac'].forEach(id=>document.getElementById(id).textContent='');['dz-tx','dz-ac'].forEach(id=>document.getElementById(id).classList.remove('loaded'));['fi-tx','fi-ac'].forEach(id=>document.getElementById(id).value='');document.getElementById('upload-screen').style.display='flex';document.getElementById('dashboard').style.display='none';checkReady();}
-setupDZ('dz-tx','fi-tx','st-tx',text=>{rawTx=text;});
-setupDZ('dz-ac','fi-ac','st-ac',text=>{rawAc=text;});
-</script>
+
+    <div class="panel warn-panel hidden" id="warnPanel">
+      <h3>Avisos</h3>
+      <ul id="warnList"></ul>
+    </div>
+
+  </section>
+</main>
+
+<footer class="foot">Hecho con Kiro · Los datos de mercado provienen de Yahoo Finance · Uso personal</footer>
+
+<script src="js/parser.js"></script>
+<script src="js/replay.js"></script>
+<script src="js/prices.js"></script>
+<script src="js/metrics.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
